@@ -1,5 +1,6 @@
 {
   "expo": {
+    "owner": "rao5201",
     "name": "茶海心遇",
     "slug": "teahaixin",
     "version": "1.0.0",
@@ -29,7 +30,10 @@
       "favicon": "./assets/favicon.png"
     },
     "extra": {
-      "apiUrl": "http://localhost:3001/api"
+      "apiUrl": "http://localhost:3001/api",
+      "eas": {
+        "projectId": "07023a7a-ebfc-4f2e-b351-f9a338498c46"
+      }
     }
   }
 }
