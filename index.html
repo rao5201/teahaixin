@@ -1,0 +1,1206 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>茶海心遇 TeaHaiXin - 以茶会心，遇见情绪</title>
+<meta name="description" content="一款AI驱动的情绪可视化社交APP，将你的心情转化为唯美的视觉卡片与音乐">
+<style>
+/* === RESET & BASE === */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+html { scroll-behavior: smooth; font-size: 16px; }
+body {
+  font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", "Noto Serif SC", serif;
+  background: #0a0a14;
+  color: #e0dde5;
+  line-height: 1.8;
+  overflow-x: hidden;
+}
+a { color: inherit; text-decoration: none; }
+ul { list-style: none; }
+img { max-width: 100%; display: block; }
+
+/* === UTILITY === */
+.container { max-width: 1200px; margin: 0 auto; padding: 0 24px; }
+.section-title {
+  text-align: center;
+  font-size: 2.4rem;
+  font-weight: 700;
+  margin-bottom: 1rem;
+  background: linear-gradient(135deg, #6c5ce7, #a29bfe, #6c5ce7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.section-subtitle {
+  text-align: center;
+  color: #8a8499;
+  font-size: 1.1rem;
+  margin-bottom: 3.5rem;
+  max-width: 600px;
+  margin-left: auto;
+  margin-right: auto;
+}
+section { padding: 100px 0; position: relative; }
+
+/* === SCROLL REVEAL === */
+.reveal {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.8s ease, transform 0.8s ease;
+}
+.reveal.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+.reveal-delay-1 { transition-delay: 0.1s; }
+.reveal-delay-2 { transition-delay: 0.2s; }
+.reveal-delay-3 { transition-delay: 0.3s; }
+.reveal-delay-4 { transition-delay: 0.4s; }
+.reveal-delay-5 { transition-delay: 0.5s; }
+.reveal-delay-6 { transition-delay: 0.6s; }
+
+/* === NAVIGATION === */
+nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1000;
+  padding: 18px 0;
+  transition: background 0.4s ease, padding 0.4s ease, box-shadow 0.4s ease;
+}
+nav.scrolled {
+  background: rgba(10, 10, 20, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 12px 0;
+  box-shadow: 0 2px 30px rgba(108, 92, 231, 0.08);
+}
+nav .container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.nav-logo {
+  font-size: 1.3rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+}
+.nav-logo span { color: #6c5ce7; }
+.nav-links { display: flex; gap: 32px; }
+.nav-links a {
+  font-size: 0.92rem;
+  color: #a09baf;
+  transition: color 0.3s;
+  position: relative;
+}
+.nav-links a:hover { color: #fff; }
+.nav-links a::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 0;
+  width: 0;
+  height: 2px;
+  background: #6c5ce7;
+  transition: width 0.3s;
+}
+.nav-links a:hover::after { width: 100%; }
+.nav-cta {
+  padding: 8px 24px;
+  background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+  border-radius: 24px;
+  font-size: 0.88rem;
+  font-weight: 600;
+  color: #fff !important;
+  transition: transform 0.3s, box-shadow 0.3s;
+}
+.nav-cta:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(108, 92, 231, 0.4);
+}
+.nav-cta::after { display: none !important; }
+
+/* === HERO === */
+#hero {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  position: relative;
+  overflow: hidden;
+  background: radial-gradient(ellipse at 50% 30%, rgba(108, 92, 231, 0.12) 0%, transparent 60%),
+              radial-gradient(ellipse at 20% 80%, rgba(46, 204, 113, 0.06) 0%, transparent 50%),
+              #0a0a14;
+}
+.hero-bg-glow {
+  position: absolute;
+  width: 600px;
+  height: 600px;
+  border-radius: 50%;
+  filter: blur(120px);
+  opacity: 0.15;
+  pointer-events: none;
+}
+.hero-bg-glow.g1 {
+  top: -200px;
+  right: -100px;
+  background: #6c5ce7;
+  animation: glowFloat 8s ease-in-out infinite;
+}
+.hero-bg-glow.g2 {
+  bottom: -200px;
+  left: -100px;
+  background: #2ecc71;
+  animation: glowFloat 10s ease-in-out infinite reverse;
+}
+@keyframes glowFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(30px, -20px) scale(1.1); }
+}
+
+/* Tea leaf particles */
+#tea-particles {
+  position: absolute;
+  top: 0; left: 0; width: 100%; height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+}
+.tea-leaf {
+  position: absolute;
+  width: 12px;
+  height: 18px;
+  background: rgba(46, 204, 113, 0.25);
+  border-radius: 50% 0 50% 0;
+  animation: leafFall linear infinite;
+  opacity: 0;
+}
+@keyframes leafFall {
+  0% { opacity: 0; transform: translateY(-20px) rotate(0deg); }
+  10% { opacity: 0.6; }
+  90% { opacity: 0.3; }
+  100% { opacity: 0; transform: translateY(100vh) rotate(360deg); }
+}
+/* Leaf variants generated via inline style in HTML */
+
+.hero-content { position: relative; z-index: 2; max-width: 800px; padding: 0 24px; }
+.hero-badge {
+  display: inline-block;
+  padding: 6px 20px;
+  border: 1px solid rgba(108, 92, 231, 0.35);
+  border-radius: 24px;
+  font-size: 0.85rem;
+  color: #a29bfe;
+  margin-bottom: 28px;
+  backdrop-filter: blur(8px);
+  background: rgba(108, 92, 231, 0.08);
+}
+.hero-title {
+  font-size: 4rem;
+  font-weight: 800;
+  line-height: 1.2;
+  margin-bottom: 8px;
+  background: linear-gradient(135deg, #fff 0%, #d4d0e8 50%, #a29bfe 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+.hero-slogan {
+  font-size: 1.6rem;
+  color: #a29bfe;
+  margin-bottom: 24px;
+  font-weight: 300;
+  letter-spacing: 4px;
+}
+.hero-desc {
+  font-size: 1.1rem;
+  color: #8a8499;
+  max-width: 560px;
+  margin: 0 auto 40px;
+  line-height: 1.9;
+}
+.hero-buttons { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; }
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 36px;
+  border-radius: 50px;
+  font-size: 1rem;
+  font-weight: 600;
+  transition: transform 0.3s, box-shadow 0.3s;
+  cursor: pointer;
+  border: none;
+}
+.btn:hover { transform: translateY(-3px); }
+.btn-primary {
+  background: linear-gradient(135deg, #6c5ce7, #a29bfe);
+  color: #fff;
+  box-shadow: 0 8px 30px rgba(108, 92, 231, 0.3);
+}
+.btn-primary:hover { box-shadow: 0 12px 40px rgba(108, 92, 231, 0.5); }
+.btn-secondary {
+  background: rgba(255, 255, 255, 0.06);
+  color: #d4d0e8;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+}
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.1);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.3);
+}
+.btn-icon {
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.hero-scroll-hint {
+  position: absolute;
+  bottom: 40px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  color: #5a5470;
+  font-size: 0.8rem;
+  animation: scrollBounce 2s ease-in-out infinite;
+}
+@keyframes scrollBounce {
+  0%, 100% { transform: translateX(-50%) translateY(0); }
+  50% { transform: translateX(-50%) translateY(10px); }
+}
+.scroll-arrow {
+  width: 24px;
+  height: 24px;
+  border-right: 2px solid #5a5470;
+  border-bottom: 2px solid #5a5470;
+  transform: rotate(45deg);
+}
+
+/* === FEATURES === */
+#features {
+  background: linear-gradient(180deg, #0a0a14 0%, #12121f 50%, #0a0a14 100%);
+}
+.features-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 24px;
+}
+.feature-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 20px;
+  padding: 40px 30px;
+  transition: transform 0.4s, box-shadow 0.4s, border-color 0.4s;
+  position: relative;
+  overflow: hidden;
+}
+.feature-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, transparent, #6c5ce7, transparent);
+  opacity: 0;
+  transition: opacity 0.4s;
+}
+.feature-card:hover::before { opacity: 1; }
+.feature-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 60px rgba(108, 92, 231, 0.12);
+  border-color: rgba(108, 92, 231, 0.2);
+}
+.feature-icon {
+  width: 64px;
+  height: 64px;
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28px;
+  margin-bottom: 24px;
+  position: relative;
+}
+.feature-icon.fi-1 { background: linear-gradient(135deg, rgba(108, 92, 231, 0.2), rgba(162, 155, 254, 0.1)); }
+.feature-icon.fi-2 { background: linear-gradient(135deg, rgba(46, 204, 113, 0.2), rgba(46, 204, 113, 0.08)); }
+.feature-icon.fi-3 { background: linear-gradient(135deg, rgba(253, 121, 168, 0.2), rgba(253, 121, 168, 0.08)); }
+.feature-icon.fi-4 { background: linear-gradient(135deg, rgba(108, 92, 231, 0.2), rgba(46, 204, 113, 0.1)); }
+.feature-icon.fi-5 { background: linear-gradient(135deg, rgba(255, 184, 77, 0.2), rgba(255, 184, 77, 0.08)); }
+.feature-icon.fi-6 { background: linear-gradient(135deg, rgba(116, 185, 255, 0.2), rgba(116, 185, 255, 0.08)); }
+.feature-card h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #f0eef5;
+}
+.feature-card p {
+  font-size: 0.95rem;
+  color: #7a7590;
+  line-height: 1.8;
+}
+
+/* === HOW IT WORKS === */
+#how-it-works {
+  background: #0a0a14;
+}
+.steps {
+  display: flex;
+  gap: 40px;
+  position: relative;
+  justify-content: center;
+}
+.steps::before {
+  content: '';
+  position: absolute;
+  top: 50px;
+  left: 15%;
+  right: 15%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, rgba(108, 92, 231, 0.3), rgba(46, 204, 113, 0.3), transparent);
+}
+.step {
+  flex: 1;
+  max-width: 320px;
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+.step-number {
+  width: 100px;
+  height: 100px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 28px;
+  font-size: 2rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #12121f, #1a1a2e);
+  border: 2px solid rgba(108, 92, 231, 0.3);
+  color: #6c5ce7;
+  position: relative;
+}
+.step-number::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 1px solid rgba(108, 92, 231, 0.1);
+}
+.step-icon {
+  font-size: 2.2rem;
+  display: block;
+  margin-bottom: -8px;
+}
+.step h3 {
+  font-size: 1.3rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #f0eef5;
+}
+.step p {
+  color: #7a7590;
+  font-size: 0.95rem;
+}
+
+/* === SCREENSHOTS / MOCKUPS === */
+#screenshots {
+  background: linear-gradient(180deg, #0a0a14 0%, #12121f 50%, #0a0a14 100%);
+  overflow: hidden;
+}
+.mockups-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 40px;
+  perspective: 1200px;
+}
+.phone-mockup {
+  width: 240px;
+  height: 480px;
+  border-radius: 36px;
+  border: 3px solid rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+  box-shadow: 0 30px 80px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255,255,255,0.1);
+  flex-shrink: 0;
+  transition: transform 0.5s ease;
+}
+.phone-mockup:hover { transform: translateY(-12px) scale(1.02); }
+.phone-mockup.center { width: 270px; height: 540px; z-index: 2; }
+.phone-notch {
+  width: 100px;
+  height: 24px;
+  background: #0a0a14;
+  border-radius: 0 0 16px 16px;
+  margin: 0 auto;
+  position: relative;
+  z-index: 2;
+}
+.phone-screen {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px 20px;
+}
+.phone-mockup:nth-child(1) .phone-screen {
+  background: linear-gradient(160deg, #1a1040, #2d1b69, #0f3460);
+}
+.phone-mockup:nth-child(2) .phone-screen {
+  background: linear-gradient(160deg, #0f3460, #1a3a2a, #1a1040);
+}
+.phone-mockup:nth-child(3) .phone-screen {
+  background: linear-gradient(160deg, #2d1b69, #1a1040, #3a1a3a);
+}
+.screen-label {
+  font-size: 0.82rem;
+  color: rgba(255, 255, 255, 0.5);
+  margin-bottom: 16px;
+  letter-spacing: 2px;
+}
+.screen-emoji { font-size: 3rem; margin-bottom: 16px; }
+.screen-title {
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 8px;
+}
+.screen-desc {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.45);
+  text-align: center;
+  line-height: 1.7;
+}
+/* Fake UI elements inside mockups */
+.screen-card {
+  width: 100%;
+  height: 80px;
+  border-radius: 14px;
+  margin-top: 16px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+.screen-dots {
+  display: flex;
+  gap: 6px;
+  margin-top: 14px;
+}
+.screen-dots span {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+}
+.screen-dots span.active { background: #6c5ce7; }
+/* Heatmap circles for map screen */
+.screen-map {
+  width: 100%;
+  flex: 1;
+  position: relative;
+  margin-top: 12px;
+}
+.map-dot {
+  position: absolute;
+  border-radius: 50%;
+  animation: mapPulse 2s ease-in-out infinite;
+}
+@keyframes mapPulse {
+  0%, 100% { transform: scale(1); opacity: 0.6; }
+  50% { transform: scale(1.3); opacity: 1; }
+}
+
+/* === TESTIMONIALS === */
+#testimonials {
+  background: #0a0a14;
+}
+.testimonials-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 28px;
+}
+.testimonial-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 20px;
+  padding: 36px 30px;
+  position: relative;
+  transition: transform 0.4s, border-color 0.4s;
+}
+.testimonial-card:hover {
+  transform: translateY(-6px);
+  border-color: rgba(108, 92, 231, 0.2);
+}
+.testimonial-quote {
+  font-size: 2.5rem;
+  color: #6c5ce7;
+  opacity: 0.3;
+  line-height: 1;
+  margin-bottom: 8px;
+  font-family: Georgia, serif;
+}
+.testimonial-text {
+  font-size: 1rem;
+  color: #b0abbd;
+  line-height: 1.9;
+  margin-bottom: 24px;
+  font-style: italic;
+}
+.testimonial-author {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.testimonial-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.2rem;
+  flex-shrink: 0;
+}
+.testimonial-avatar.ta-1 { background: linear-gradient(135deg, #6c5ce7, #a29bfe); }
+.testimonial-avatar.ta-2 { background: linear-gradient(135deg, #2ecc71, #55efc4); }
+.testimonial-avatar.ta-3 { background: linear-gradient(135deg, #fd79a8, #e17055); }
+.testimonial-name {
+  font-weight: 600;
+  font-size: 0.95rem;
+  color: #e0dde5;
+}
+.testimonial-role {
+  font-size: 0.8rem;
+  color: #6a6580;
+}
+
+/* === FAQ === */
+#faq {
+  background: linear-gradient(180deg, #0a0a14, #12121f);
+}
+.faq-list {
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.faq-item {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: border-color 0.3s;
+}
+.faq-item.open { border-color: rgba(108, 92, 231, 0.25); }
+.faq-question {
+  padding: 22px 28px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 1.05rem;
+  color: #e0dde5;
+  transition: color 0.3s;
+  user-select: none;
+}
+.faq-item.open .faq-question { color: #a29bfe; }
+.faq-arrow {
+  width: 20px;
+  height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.3s;
+  flex-shrink: 0;
+  margin-left: 16px;
+}
+.faq-item.open .faq-arrow { transform: rotate(180deg); }
+.faq-arrow svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
+.faq-answer {
+  max-height: 0;
+  overflow: hidden;
+  transition: max-height 0.4s ease, padding 0.4s ease;
+}
+.faq-item.open .faq-answer {
+  max-height: 300px;
+}
+.faq-answer-inner {
+  padding: 0 28px 22px;
+  color: #7a7590;
+  font-size: 0.95rem;
+  line-height: 1.9;
+}
+
+/* === FOOTER === */
+footer {
+  background: #08080f;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 60px 0 30px;
+}
+.footer-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 40px;
+  margin-bottom: 50px;
+  flex-wrap: wrap;
+}
+.footer-brand h3 {
+  font-size: 1.5rem;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #f0eef5;
+}
+.footer-brand h3 span { color: #6c5ce7; }
+.footer-brand p {
+  color: #5a5470;
+  font-size: 0.9rem;
+  max-width: 300px;
+  line-height: 1.8;
+}
+.footer-links-group h4 {
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: #b0abbd;
+  margin-bottom: 16px;
+}
+.footer-links-group a {
+  display: block;
+  color: #5a5470;
+  font-size: 0.88rem;
+  padding: 5px 0;
+  transition: color 0.3s;
+}
+.footer-links-group a:hover { color: #a29bfe; }
+.footer-bottom {
+  text-align: center;
+  padding-top: 30px;
+  border-top: 1px solid rgba(255, 255, 255, 0.04);
+  color: #3a3550;
+  font-size: 0.82rem;
+}
+
+/* === CTA BANNER (before footer) === */
+#cta-banner {
+  padding: 80px 0;
+  background: #0a0a14;
+  text-align: center;
+}
+.cta-box {
+  max-width: 700px;
+  margin: 0 auto;
+  padding: 60px 48px;
+  border-radius: 28px;
+  background: linear-gradient(160deg, rgba(108, 92, 231, 0.12), rgba(46, 204, 113, 0.06));
+  border: 1px solid rgba(108, 92, 231, 0.15);
+  position: relative;
+  overflow: hidden;
+}
+.cta-box::before {
+  content: '';
+  position: absolute;
+  top: -50%;
+  right: -30%;
+  width: 400px;
+  height: 400px;
+  background: radial-gradient(circle, rgba(108, 92, 231, 0.1), transparent 70%);
+  pointer-events: none;
+}
+.cta-box h2 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #f0eef5;
+  margin-bottom: 16px;
+}
+.cta-box p {
+  color: #8a8499;
+  margin-bottom: 32px;
+  font-size: 1.05rem;
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 1024px) {
+  .features-grid { grid-template-columns: repeat(2, 1fr); }
+  .testimonials-grid { grid-template-columns: repeat(2, 1fr); }
+  .testimonials-grid .testimonial-card:last-child {
+    grid-column: 1 / -1;
+    max-width: 400px;
+    margin: 0 auto;
+  }
+}
+@media (max-width: 768px) {
+  .hero-title { font-size: 2.6rem; }
+  .hero-slogan { font-size: 1.2rem; letter-spacing: 2px; }
+  .section-title { font-size: 1.8rem; }
+  section { padding: 70px 0; }
+  .features-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }
+  .steps { flex-direction: column; align-items: center; }
+  .steps::before { display: none; }
+  .mockups-row { flex-direction: column; gap: 24px; }
+  .phone-mockup, .phone-mockup.center { width: 220px; height: 440px; }
+  .testimonials-grid { grid-template-columns: 1fr; max-width: 420px; margin: 0 auto; }
+  .testimonials-grid .testimonial-card:last-child { max-width: 100%; }
+  .nav-links { display: none; }
+  .footer-top { flex-direction: column; gap: 30px; }
+  .hero-buttons { flex-direction: column; align-items: center; }
+}
+</style>
+</head>
+<body>
+
+<!-- Navigation -->
+<nav id="navbar">
+  <div class="container">
+    <div class="nav-logo"><span>茶海</span>心遇</div>
+    <div class="nav-links">
+      <a href="#features">核心功能</a>
+      <a href="#how-it-works">使用流程</a>
+      <a href="#screenshots">应用展示</a>
+      <a href="#testimonials">用户评价</a>
+      <a href="#faq">常见问题</a>
+      <a href="#cta-banner" class="nav-cta">立即下载</a>
+    </div>
+  </div>
+</nav>
+
+<!-- Hero Section -->
+<section id="hero">
+  <div class="hero-bg-glow g1"></div>
+  <div class="hero-bg-glow g2"></div>
+  <div id="tea-particles"></div>
+  <div class="hero-content">
+    <div class="hero-badge reveal">AI 情绪可视化社交</div>
+    <h1 class="hero-title reveal reveal-delay-1">茶海心遇</h1>
+    <p class="hero-slogan reveal reveal-delay-2">以茶会心，遇见情绪</p>
+    <p class="hero-desc reveal reveal-delay-3">一款AI驱动的情绪可视化社交APP，将你的心情转化为唯美的视觉卡片与音乐。在数字茶室中，与共鸣的灵魂相遇。</p>
+    <div class="hero-buttons reveal reveal-delay-4">
+      <a href="#" class="btn btn-primary">
+        <span class="btn-icon"><svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg></span>
+        App Store 下载
+      </a>
+      <a href="#" class="btn btn-secondary">
+        <span class="btn-icon"><svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M3.18 23.04L14.46 12 3.18.96c-.36.28-.58.71-.58 1.2v19.68c0 .49.22.92.58 1.2zm1.63.73l12.6-7.08-2.77-2.64L4.81 23.77zm14.83-8.45L7.63 8.01l5.18 4.93 5.18-4.93-1.35-.76 5.18-2.91c.68-.38.68-1.3 0-1.68L7.63 8.01l12.01 6.75z"/></svg></span>
+        Google Play 下载
+      </a>
+    </div>
+  </div>
+  <div class="hero-scroll-hint">
+    <span>向下探索</span>
+    <div class="scroll-arrow"></div>
+  </div>
+</section>
+
+<!-- Features Section -->
+<section id="features">
+  <div class="container">
+    <h2 class="section-title reveal">核心功能</h2>
+    <p class="section-subtitle reveal">六大AI驱动功能，让每一份情绪都被看见、被听见、被珍惜</p>
+    <div class="features-grid">
+      <div class="feature-card reveal reveal-delay-1">
+        <div class="feature-icon fi-1">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#a29bfe" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a9 9 0 0 1 9 9c0 3.87-3.13 7-7 7h-1v3c-4.97-2.24-10-6.03-10-10a9 9 0 0 1 9-9z"/><path d="M8 11h.01M12 11h.01M16 11h.01"/></svg>
+        </div>
+        <h3>AI 情绪分析</h3>
+        <p>输入任何一段文字，AI即刻捕捉你的情绪波动。精准识别喜悦、忧伤、平静、焦虑等多维情绪状态，理解文字背后的心声。</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-2">
+        <div class="feature-icon fi-2">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#2ecc71" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        </div>
+        <h3>情绪视觉卡片</h3>
+        <p>将无形的情绪转化为唯美的视觉艺术卡片。每一种心情都有独特的色彩与构图，生成专属于你此刻心境的画作。</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-3">
+        <div class="feature-icon fi-3">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#fd79a8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+        </div>
+        <h3>情绪音乐匹配</h3>
+        <p>每一份情绪，都值得一首专属旋律。AI根据你的心境智能匹配背景音乐，用声音温柔地拥抱你的每一刻感受。</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-4">
+        <div class="feature-icon fi-4">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#6c5ce7" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+        </div>
+        <h3>灵魂共振匹配</h3>
+        <p>在情绪的海洋里找到共鸣的人。通过AI情绪图谱匹配，连接此刻与你感受相似的灵魂，开始一段温暖的对话。</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-5">
+        <div class="feature-icon fi-5">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#ffb84d" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        </div>
+        <h3>城市情绪地图</h3>
+        <p>以热力图呈现一座城市的情绪脉搏。看见此刻同一片天空下，千万人的喜怒哀乐，感受城市的温度与心跳。</p>
+      </div>
+      <div class="feature-card reveal reveal-delay-6">
+        <div class="feature-icon fi-6">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#74b9ff" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg>
+        </div>
+        <h3>每周情绪报告</h3>
+        <p>每周收到一份精美的情绪复盘报告。AI为你总结情绪变化趋势，发现内心深处的情绪规律，更好地认识自己。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- How It Works -->
+<section id="how-it-works">
+  <div class="container">
+    <h2 class="section-title reveal">三步开启情绪之旅</h2>
+    <p class="section-subtitle reveal">简单三步，让心情有声有色</p>
+    <div class="steps">
+      <div class="step reveal reveal-delay-1">
+        <div class="step-number">
+          <span class="step-icon">&#9997;&#65039;</span>
+        </div>
+        <h3>书写此刻心情</h3>
+        <p>打开茶海心遇，用文字记录你此刻的感受。无论长短，AI都能精准捕捉你的情绪状态。</p>
+      </div>
+      <div class="step reveal reveal-delay-2">
+        <div class="step-number">
+          <span class="step-icon">&#127912;</span>
+        </div>
+        <h3>AI 生成艺术与音乐</h3>
+        <p>AI瞬间将你的情绪转化为一张唯美的视觉卡片，并匹配一首温柔的旋律，让心情有形有声。</p>
+      </div>
+      <div class="step reveal reveal-delay-3">
+        <div class="step-number">
+          <span class="step-icon">&#128293;</span>
+        </div>
+        <h3>分享与灵魂共振</h3>
+        <p>将你的情绪卡片分享到茶室，遇见此刻与你心意相通的人，开启一段温暖而有深度的连接。</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Screenshots / Mockups -->
+<section id="screenshots">
+  <div class="container">
+    <h2 class="section-title reveal">应用预览</h2>
+    <p class="section-subtitle reveal">沉浸式的情绪可视化体验，每一帧都是艺术</p>
+    <div class="mockups-row reveal">
+      <div class="phone-mockup">
+        <div class="phone-screen">
+          <div class="phone-notch"></div>
+          <div class="screen-label">情绪卡片</div>
+          <div class="screen-emoji">&#127752;</div>
+          <div class="screen-title">今日心境 · 宁静</div>
+          <div class="screen-desc">山间清风拂过心湖<br>一切都刚刚好</div>
+          <div class="screen-card">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg>
+            正在播放：晨雾轻语
+          </div>
+          <div class="screen-dots">
+            <span class="active"></span><span></span><span></span>
+          </div>
+        </div>
+      </div>
+      <div class="phone-mockup center">
+        <div class="phone-screen">
+          <div class="phone-notch"></div>
+          <div class="screen-label">灵魂共振</div>
+          <div class="screen-emoji">&#10024;</div>
+          <div class="screen-title">发现共鸣</div>
+          <div class="screen-desc">3位灵魂正与你此刻<br>共享相似的心境</div>
+          <div class="screen-card">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+            情绪匹配度 92%
+          </div>
+          <div class="screen-card">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.4)" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>
+            开始对话
+          </div>
+          <div class="screen-dots">
+            <span></span><span class="active"></span><span></span>
+          </div>
+        </div>
+      </div>
+      <div class="phone-mockup">
+        <div class="phone-screen">
+          <div class="phone-notch"></div>
+          <div class="screen-label">城市情绪</div>
+          <div class="screen-emoji">&#127759;</div>
+          <div class="screen-title">北京 · 此刻</div>
+          <div class="screen-desc">平静 42% | 喜悦 28%<br>思念 18% | 其他 12%</div>
+          <div class="screen-map">
+            <div class="map-dot" style="width:30px;height:30px;background:rgba(108,92,231,0.4);top:20%;left:30%;animation-delay:0s;"></div>
+            <div class="map-dot" style="width:22px;height:22px;background:rgba(46,204,113,0.4);top:45%;left:55%;animation-delay:0.5s;"></div>
+            <div class="map-dot" style="width:18px;height:18px;background:rgba(253,121,168,0.35);top:65%;left:35%;animation-delay:1s;"></div>
+            <div class="map-dot" style="width:26px;height:26px;background:rgba(255,184,77,0.35);top:30%;left:65%;animation-delay:1.5s;"></div>
+            <div class="map-dot" style="width:16px;height:16px;background:rgba(116,185,255,0.35);top:55%;left:20%;animation-delay:0.7s;"></div>
+          </div>
+          <div class="screen-dots">
+            <span></span><span></span><span class="active"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Testimonials -->
+<section id="testimonials">
+  <div class="container">
+    <h2 class="section-title reveal">用户心声</h2>
+    <p class="section-subtitle reveal">来自真实用户的温暖反馈</p>
+    <div class="testimonials-grid">
+      <div class="testimonial-card reveal reveal-delay-1">
+        <div class="testimonial-quote">&ldquo;</div>
+        <p class="testimonial-text">第一次觉得自己的情绪被真正「看见」了。那天心情低落，写了几句话，生成的卡片配上音乐，眼泪一下就流了出来。谢谢茶海心遇，让我知道有人懂我。</p>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar ta-1">&#127800;</div>
+          <div>
+            <div class="testimonial-name">林小樱</div>
+            <div class="testimonial-role">设计师 · 上海</div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-card reveal reveal-delay-2">
+        <div class="testimonial-quote">&ldquo;</div>
+        <p class="testimonial-text">灵魂共振功能太神奇了！通过情绪匹配认识了一位朋友，我们的心境惊人地相似。现在每天都会分享彼此的情绪卡片，像是找到了知音。</p>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar ta-2">&#127811;</div>
+          <div>
+            <div class="testimonial-name">陈默然</div>
+            <div class="testimonial-role">程序员 · 深圳</div>
+          </div>
+        </div>
+      </div>
+      <div class="testimonial-card reveal reveal-delay-3">
+        <div class="testimonial-quote">&ldquo;</div>
+        <p class="testimonial-text">每周情绪报告让我发现原来周三总是最焦虑的一天。了解自己的情绪规律后，我学会了提前调节，生活变得从容了许多。这不只是社交软件，更是情绪伙伴。</p>
+        <div class="testimonial-author">
+          <div class="testimonial-avatar ta-3">&#127848;</div>
+          <div>
+            <div class="testimonial-name">苏雨晴</div>
+            <div class="testimonial-role">教师 · 成都</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section id="faq">
+  <div class="container">
+    <h2 class="section-title reveal">常见问题</h2>
+    <p class="section-subtitle reveal">关于茶海心遇，你想知道的都在这里</p>
+    <div class="faq-list">
+      <div class="faq-item reveal reveal-delay-1">
+        <div class="faq-question">
+          茶海心遇是免费使用的吗？
+          <div class="faq-arrow"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div>
+        </div>
+        <div class="faq-answer">
+          <div class="faq-answer-inner">基础功能完全免费，包括每日情绪记录、AI情绪分析和基础视觉卡片生成。高级功能如无限音乐匹配、高清卡片导出和深度情绪报告包含在会员订阅中，价格亲民。</div>
+        </div>
+      </div>
+      <div class="faq-item reveal reveal-delay-2">
+        <div class="faq-question">
+          我的情绪数据安全吗？
+          <div class="faq-arrow"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div>
+        </div>
+        <div class="faq-answer">
+          <div class="faq-answer-inner">我们高度重视用户隐私。所有情绪数据均经过端到端加密存储，AI分析在安全的隔离环境中进行。你的情绪记录仅自己可见，灵魂共振匹配仅基于匿名的情绪标签，不涉及任何个人信息。</div>
+        </div>
+      </div>
+      <div class="faq-item reveal reveal-delay-3">
+        <div class="faq-question">
+          灵魂共振匹配是如何实现的？
+          <div class="faq-arrow"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div>
+        </div>
+        <div class="faq-answer">
+          <div class="faq-answer-inner">我们的AI会将你的情绪分析为多维度的情绪向量，在保护隐私的前提下，与其他用户的情绪状态进行相似度匹配。当两位用户的情绪图谱高度吻合时，系统会推荐互相连接，帮助你找到此刻真正「懂你」的人。</div>
+        </div>
+      </div>
+      <div class="faq-item reveal reveal-delay-4">
+        <div class="faq-question">
+          支持哪些平台？
+          <div class="faq-arrow"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div>
+        </div>
+        <div class="faq-answer">
+          <div class="faq-answer-inner">茶海心遇目前支持 iOS 和 Android 双平台，同时提供微信小程序版本。你可以在 App Store、Google Play 或微信中搜索「茶海心遇」下载使用。桌面版正在开发中，敬请期待。</div>
+        </div>
+      </div>
+      <div class="faq-item reveal reveal-delay-5">
+        <div class="faq-question">
+          如何分享我的情绪卡片？
+          <div class="faq-arrow"><svg viewBox="0 0 24 24"><polyline points="6 9 12 15 18 9"/></svg></div>
+        </div>
+        <div class="faq-answer">
+          <div class="faq-answer-inner">生成的情绪卡片可以一键保存到相册，也可以直接分享到微信、微博、朋友圈等社交平台。同时你也可以选择将卡片匿名发布到茶海心遇的「茶室」社区，与其他用户产生共鸣。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CTA Banner -->
+<section id="cta-banner">
+  <div class="container">
+    <div class="cta-box reveal">
+      <h2>开始你的情绪之旅</h2>
+      <p>下载茶海心遇，让每一份心情都被温柔以待</p>
+      <div class="hero-buttons" style="justify-content: center;">
+        <a href="#" class="btn btn-primary">
+          <span class="btn-icon"><svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg></span>
+          App Store 下载
+        </a>
+        <a href="#" class="btn btn-secondary">
+          <span class="btn-icon"><svg viewBox="0 0 24 24" fill="currentColor" width="20" height="20"><path d="M3.18 23.04L14.46 12 3.18.96c-.36.28-.58.71-.58 1.2v19.68c0 .49.22.92.58 1.2zm1.63.73l12.6-7.08-2.77-2.64L4.81 23.77zm14.83-8.45L7.63 8.01l5.18 4.93 5.18-4.93-1.35-.76 5.18-2.91c.68-.38.68-1.3 0-1.68L7.63 8.01l12.01 6.75z"/></svg></span>
+          Google Play 下载
+        </a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Footer -->
+<footer>
+  <div class="container">
+    <div class="footer-top">
+      <div class="footer-brand">
+        <h3><span>茶海</span>心遇</h3>
+        <p>以茶会心，遇见情绪。一款AI驱动的情绪可视化社交APP，用科技温暖每一颗心。</p>
+      </div>
+      <div class="footer-links-group">
+        <h4>产品</h4>
+        <a href="#">功能介绍</a>
+        <a href="#">会员方案</a>
+        <a href="#">更新日志</a>
+        <a href="#">开发路线</a>
+      </div>
+      <div class="footer-links-group">
+        <h4>支持</h4>
+        <a href="#">帮助中心</a>
+        <a href="#">联系我们</a>
+        <a href="#">意见反馈</a>
+        <a href="#">社区守则</a>
+      </div>
+      <div class="footer-links-group">
+        <h4>关于</h4>
+        <a href="#">关于我们</a>
+        <a href="#">隐私政策</a>
+        <a href="#">用户协议</a>
+        <a href="#">媒体资源</a>
+      </div>
+    </div>
+    <div class="footer-bottom">
+      &copy; 2024 茶海心遇 TeaHaiXin. All rights reserved.
+    </div>
+  </div>
+</footer>
+
+<script>
+// === Tea Leaf Particles ===
+(function() {
+  var container = document.getElementById('tea-particles');
+  var leafCount = 18;
+  for (var i = 0; i < leafCount; i++) {
+    var leaf = document.createElement('div');
+    leaf.className = 'tea-leaf';
+    var size = 8 + Math.random() * 14;
+    var left = Math.random() * 100;
+    var duration = 10 + Math.random() * 18;
+    var delay = Math.random() * 20;
+    var opacity = 0.15 + Math.random() * 0.25;
+    leaf.style.cssText =
+      'width:' + size + 'px;height:' + (size * 1.4) + 'px;' +
+      'left:' + left + '%;' +
+      'animation-duration:' + duration + 's;' +
+      'animation-delay:' + delay + 's;' +
+      'background:rgba(46,204,113,' + opacity + ');';
+    // Vary leaf shape
+    if (i % 3 === 0) {
+      leaf.style.borderRadius = '0 50% 0 50%';
+    } else if (i % 3 === 1) {
+      leaf.style.borderRadius = '50% 0 50% 0';
+      leaf.style.background = 'rgba(108,92,231,' + (opacity * 0.6) + ')';
+    }
+    container.appendChild(leaf);
+  }
+})();
+
+// === Scroll Reveal (IntersectionObserver) ===
+(function() {
+  var reveals = document.querySelectorAll('.reveal');
+  if ('IntersectionObserver' in window) {
+    var observer = new IntersectionObserver(function(entries) {
+      entries.forEach(function(entry) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('visible');
+          observer.unobserve(entry.target);
+        }
+      });
+    }, { threshold: 0.12, rootMargin: '0px 0px -40px 0px' });
+    reveals.forEach(function(el) { observer.observe(el); });
+  } else {
+    // Fallback: just show everything
+    reveals.forEach(function(el) { el.classList.add('visible'); });
+  }
+})();
+
+// === Navbar Scroll Effect ===
+(function() {
+  var nav = document.getElementById('navbar');
+  var scrolled = false;
+  window.addEventListener('scroll', function() {
+    if (window.scrollY > 60 && !scrolled) {
+      nav.classList.add('scrolled');
+      scrolled = true;
+    } else if (window.scrollY <= 60 && scrolled) {
+      nav.classList.remove('scrolled');
+      scrolled = false;
+    }
+  });
+})();
+
+// === FAQ Accordion ===
+(function() {
+  var items = document.querySelectorAll('.faq-item');
+  items.forEach(function(item) {
+    var question = item.querySelector('.faq-question');
+    question.addEventListener('click', function() {
+      var isOpen = item.classList.contains('open');
+      // Close all
+      items.forEach(function(i) { i.classList.remove('open'); });
+      // Open clicked if it was closed
+      if (!isOpen) { item.classList.add('open'); }
+    });
+  });
+})();
+
+// === Smooth Scroll for Nav Links ===
+(function() {
+  document.querySelectorAll('a[href^="#"]').forEach(function(link) {
+    link.addEventListener('click', function(e) {
+      var target = document.querySelector(this.getAttribute('href'));
+      if (target) {
+        e.preventDefault();
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    });
+  });
+})();
+</script>
+</body>
+</html>
