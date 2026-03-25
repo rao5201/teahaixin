@@ -1,0 +1,25 @@
+{
+  "name": "茶海心遇 - 以茶会心，遇见情绪",
+  "short_name": "茶海心遇",
+  "description": "AI驱动的情绪社交应用，用诗意表达你的心情",
+  "start_url": "./index.html",
+  "display": "standalone",
+  "orientation": "portrait",
+  "theme_color": "#6c5ce7",
+  "background_color": "#0a0a14",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect width='512' height='512' rx='64' fill='%230a0a14'/%3E%3Ctext x='256' y='200' font-size='120' text-anchor='middle' fill='%236c5ce7'%3E%F0%9F%8D%B5%3C/text%3E%3Ctext x='256' y='320' font-size='72' text-anchor='middle' fill='%23e0d6ff' font-family='sans-serif'%3E%E8%8C%B6%E6%B5%B7%3C/text%3E%3Ctext x='256' y='400' font-size='72' text-anchor='middle' fill='%23e0d6ff' font-family='sans-serif'%3E%E5%BF%83%E9%81%87%3C/text%3E%3C/svg%3E",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect width='192' height='192' rx='24' fill='%230a0a14'/%3E%3Ctext x='96' y='80' font-size='48' text-anchor='middle' fill='%236c5ce7'%3E%F0%9F%8D%B5%3C/text%3E%3Ctext x='96' y='125' font-size='28' text-anchor='middle' fill='%23e0d6ff' font-family='sans-serif'%3E%E8%8C%B6%E6%B5%B7%3C/text%3E%3Ctext x='96' y='158' font-size='28' text-anchor='middle' fill='%23e0d6ff' font-family='sans-serif'%3E%E5%BF%83%E9%81%87%3C/text%3E%3C/svg%3E",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

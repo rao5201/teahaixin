@@ -1,0 +1,252 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#6c5ce7">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="description" content="茶海心遇 - 以茶会心，遇见情绪。AI驱动的情绪社交应用。">
+  <title>茶海心遇</title>
+  <link rel="manifest" href="manifest.json">
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🍵</text></svg>">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div id="app">
+
+    <!-- Welcome Screen -->
+    <section id="screen-welcome" class="screen active">
+      <div class="welcome-container">
+        <div class="welcome-logo">
+          <div class="logo-circle">
+            <span class="logo-emoji">🍵</span>
+          </div>
+          <div class="logo-ripple"></div>
+        </div>
+        <h1 class="welcome-title">茶海心遇</h1>
+        <p class="welcome-slogan">以茶会心，遇见情绪</p>
+        <div class="welcome-divider">
+          <span class="divider-leaf">🌿</span>
+        </div>
+        <form id="welcome-form" class="welcome-form">
+          <div class="input-group">
+            <input type="text" id="username-input" placeholder="输入你的名字，开启心灵之旅" maxlength="20" autocomplete="off">
+            <span class="input-hint">最多20个字符</span>
+          </div>
+          <button type="submit" class="btn btn-primary btn-lg" id="btn-enter">
+            <span>进入茶室</span>
+            <svg class="btn-arrow" viewBox="0 0 24 24" width="20" height="20"><path fill="currentColor" d="M12 4l-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z"/></svg>
+          </button>
+          <button type="button" class="btn btn-ghost" id="btn-guest">
+            <span>随缘品茶</span>
+            <span class="guest-hint">（访客模式）</span>
+          </button>
+        </form>
+        <p class="welcome-footer">一杯茶的时间，与心灵对话</p>
+      </div>
+    </section>
+
+    <!-- Home Screen -->
+    <section id="screen-home" class="screen">
+      <div class="screen-content with-nav">
+        <header class="home-header">
+          <div class="greeting">
+            <span class="greeting-time" id="greeting-time"></span>
+            <span class="greeting-name" id="greeting-name"></span>
+          </div>
+          <div class="header-tea">🍵</div>
+        </header>
+
+        <div class="home-card">
+          <h2 class="card-title">此刻心语</h2>
+          <p class="card-subtitle">写下你此刻的感受，让茶香化作诗意</p>
+          <div class="textarea-wrapper">
+            <textarea id="emotion-input" placeholder="今天的心情如何？可以是一句话、一段文字、甚至只是一个词..." maxlength="500" rows="4"></textarea>
+            <span class="char-counter"><span id="char-count">0</span>/500</span>
+          </div>
+
+          <div class="mood-chips">
+            <span class="chips-label">快速心情：</span>
+            <div class="chips-container" id="mood-chips">
+              <button class="chip" data-text="今天阳光真好，心情也跟着明亮起来">☀️ 阳光明媚</button>
+              <button class="chip" data-text="有点想念远方的朋友">💭 想念远方</button>
+              <button class="chip" data-text="工作压力好大，想要喘口气">😮‍💨 压力山大</button>
+              <button class="chip" data-text="听着雨声，内心很平静">🌧️ 雨中宁静</button>
+              <button class="chip" data-text="今天遇到了一个特别的人">💫 怦然心动</button>
+              <button class="chip" data-text="生活总是不如意，有些沮丧">😔 有点低落</button>
+              <button class="chip" data-text="终于完成了一件大事，好开心">🎉 成就达成</button>
+              <button class="chip" data-text="突然觉得世界很美好">🌸 岁月静好</button>
+            </div>
+          </div>
+
+          <button class="btn btn-primary btn-submit" id="btn-generate" disabled>
+            <span class="btn-text">生成心语</span>
+            <div class="btn-loader">
+              <div class="tea-loader">
+                <span>🍵</span>
+              </div>
+              <span>心语酿造中...</span>
+            </div>
+          </button>
+        </div>
+
+        <div class="home-recent" id="home-recent" style="display:none;">
+          <h3 class="section-title">最近心语</h3>
+          <div id="recent-list"></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Result Screen -->
+    <section id="screen-result" class="screen">
+      <div class="screen-content">
+        <button class="back-btn" id="btn-back-result">
+          <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+          <span>返回</span>
+        </button>
+
+        <div class="result-container" id="result-container">
+          <div class="result-image-wrapper">
+            <img id="result-image" class="result-image" alt="心境画作" loading="eager">
+            <div class="image-overlay">
+              <span class="emotion-badge" id="result-badge"></span>
+            </div>
+          </div>
+
+          <div class="result-poem-card">
+            <div class="poem-decoration">❖</div>
+            <p class="result-poem" id="result-poem"></p>
+            <div class="poem-decoration">❖</div>
+          </div>
+
+          <div class="result-input-echo">
+            <span class="echo-label">你说：</span>
+            <span class="echo-text" id="result-input-text"></span>
+          </div>
+
+          <div class="result-audio-card" id="result-audio-section">
+            <div class="audio-info">
+              <span class="audio-icon">🎵</span>
+              <span class="audio-label" id="audio-label">氛围音乐</span>
+            </div>
+            <audio id="result-audio" controls></audio>
+          </div>
+
+          <div class="result-actions">
+            <button class="btn btn-primary" id="btn-save-result">
+              <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M17 3H5c-1.11 0-2 .9-2 2v14c0 1.1.89 2 2 2h14c1.1 0 2-.9 2-2V7l-4-4zm-5 16c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3zm3-10H5V5h10v4z"/></svg>
+              收藏心语
+            </button>
+            <button class="btn btn-outline" id="btn-share-result">
+              <svg viewBox="0 0 24 24" width="18" height="18"><path fill="currentColor" d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>
+              分享
+            </button>
+            <button class="btn btn-ghost" id="btn-another">
+              再写一段 ✏️
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- History Screen -->
+    <section id="screen-history" class="screen">
+      <div class="screen-content with-nav">
+        <header class="page-header">
+          <h2>心语历程</h2>
+          <button class="btn-icon" id="btn-clear-history" title="清除历史">
+            <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z"/></svg>
+          </button>
+        </header>
+        <div id="history-list" class="history-list"></div>
+        <div id="history-empty" class="empty-state" style="display:none;">
+          <div class="empty-icon">📝</div>
+          <p class="empty-title">还没有心语记录</p>
+          <p class="empty-desc">写下你的第一段心情吧</p>
+          <button class="btn btn-primary btn-sm" id="btn-first-entry">去写心语</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Profile Screen -->
+    <section id="screen-profile" class="screen">
+      <div class="screen-content with-nav">
+        <header class="page-header">
+          <h2>我的茶室</h2>
+        </header>
+
+        <div class="profile-card">
+          <div class="profile-avatar" id="profile-avatar">🍵</div>
+          <h3 class="profile-name" id="profile-name">茶友</h3>
+          <p class="profile-joined" id="profile-joined"></p>
+        </div>
+
+        <div class="stats-card">
+          <h3 class="card-title">情绪统计</h3>
+          <div class="stats-summary">
+            <div class="stat-item">
+              <span class="stat-value" id="stat-total">0</span>
+              <span class="stat-label">心语总数</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value" id="stat-frequent">-</span>
+              <span class="stat-label">最常心情</span>
+            </div>
+            <div class="stat-item">
+              <span class="stat-value" id="stat-streak">0</span>
+              <span class="stat-label">连续天数</span>
+            </div>
+          </div>
+          <div class="emotion-chart" id="emotion-chart"></div>
+        </div>
+
+        <div class="about-card">
+          <h3 class="card-title">关于茶海心遇</h3>
+          <div class="about-content">
+            <p>茶海心遇是一款以茶文化为灵感的AI情绪社交应用。</p>
+            <p>在这里，每一段心情都会化作一首诗、一幅画、一曲音。用一杯茶的时间，与自己的内心对话。</p>
+            <div class="about-features">
+              <div class="feature-item">🎨 AI 生成心境画作</div>
+              <div class="feature-item">📝 情感驱动的诗句</div>
+              <div class="feature-item">🎵 沉浸式氛围音乐</div>
+              <div class="feature-item">📊 情绪记录与统计</div>
+            </div>
+          </div>
+          <div class="about-footer">
+            <span>版本 1.0.0</span>
+            <span>·</span>
+            <span>茶海心遇 TeaHaiXin</span>
+          </div>
+        </div>
+
+        <button class="btn btn-ghost btn-danger" id="btn-logout">退出登录</button>
+      </div>
+    </section>
+
+    <!-- Bottom Navigation -->
+    <nav id="bottom-nav" class="bottom-nav" style="display:none;">
+      <button class="nav-item active" data-screen="home">
+        <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>
+        <span>首页</span>
+      </button>
+      <button class="nav-item" data-screen="history">
+        <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
+        <span>历程</span>
+      </button>
+      <button class="nav-item" data-screen="profile">
+        <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>
+        <span>我的</span>
+      </button>
+    </nav>
+
+    <!-- Toast -->
+    <div id="toast" class="toast"></div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
