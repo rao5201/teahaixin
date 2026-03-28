@@ -7,6 +7,9 @@
 
   // ─── Constants ──────────────────────────────────
   const STORAGE_KEY = 'teahaixin_data';
+  // API地址：部署后端后替换为你的Render地址，例如 https://teahaixin-api.onrender.com
+  // 留空则使用纯本地模式
+  const API_BASE = localStorage.getItem('teahaixin_api') || '';
   const EMOTIONS = {
     happy:    { label: '喜悦', emoji: '😊', color: '#FFD700', prompt: 'golden sunlight through cherry blossoms, warm happy scene, watercolor chinese painting' },
     sad:      { label: '忧伤', emoji: '😢', color: '#4A90E2', prompt: 'rain falling on lotus pond, melancholy blue tones, misty chinese ink painting' },
@@ -98,7 +101,7 @@
   let currentResult = null;
 
   function defaultState() {
-    return { username: '', history: [], joinDate: null };
+    return { username: '', password: '', token: '', history: [], joinDate: null, isRegistered: false };
   }
 
   function loadState() {
@@ -110,6 +113,43 @@
 
   function saveState() {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  }
+
+  // ─── API helpers ──────────────────────────────
+  async function apiCall(path, method = 'GET', body = null) {
+    if (!API_BASE) return null;
+    const opts = {
+      method,
+      headers: { 'Content-Type': 'application/json' },
+    };
+    if (state.token) opts.headers['Authorization'] = 'Bearer ' + state.token;
+    if (body) opts.body = JSON.stringify(body);
+    try {
+      const res = await fetch(API_BASE + path, opts);
+      return await res.json();
+    } catch (e) {
+      console.log('[API] 离线或服务不可用:', e.message);
+      return null;
+    }
+  }
+
+  // ─── Local user DB (fallback when no backend) ──
+  const USERS_KEY = 'teahaixin_users';
+  function getLocalUsers() {
+    try { return JSON.parse(localStorage.getItem(USERS_KEY) || '{}'); } catch { return {}; }
+  }
+  function saveLocalUsers(users) {
+    localStorage.setItem(USERS_KEY, JSON.stringify(users));
+  }
+  // Simple hash for local password storage (NOT cryptographically secure, just basic obfuscation)
+  function simpleHash(str) {
+    let hash = 0;
+    for (let i = 0; i < str.length; i++) {
+      const c = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + c;
+      hash |= 0;
+    }
+    return 'h_' + Math.abs(hash).toString(36);
   }
 
   // ─── DOM helpers ──────────────────────────────
@@ -184,22 +224,91 @@
     const input = $('#username-input');
     const btnGuest = $('#btn-guest');
 
-    form.addEventListener('submit', e => {
+    // Add password field dynamically if not exists
+    if (!$('#password-input')) {
+      const pwGroup = document.createElement('div');
+      pwGroup.className = 'input-group';
+      pwGroup.innerHTML = `
+        <input type="password" id="password-input" placeholder="设置密码（至少6位）" maxlength="30" autocomplete="off">
+        <span class="input-hint">登录时需要密码验证</span>`;
+      input.parentElement.after(pwGroup);
+
+      // Toggle login/register
+      const toggleDiv = document.createElement('div');
+      toggleDiv.className = 'auth-toggle';
+      toggleDiv.innerHTML = `<button type="button" id="btn-toggle-auth" class="btn-link">已有账号？点击登录</button>`;
+      pwGroup.after(toggleDiv);
+
+      let isRegister = true;
+      $('#btn-toggle-auth').addEventListener('click', () => {
+        isRegister = !isRegister;
+        $('#btn-toggle-auth').textContent = isRegister ? '已有账号？点击登录' : '没有账号？点击注册';
+        $('#btn-enter').querySelector('span').textContent = isRegister ? '注册并进入' : '登录';
+        $('#password-input').placeholder = isRegister ? '设置密码（至少6位）' : '输入密码';
+      });
+
+      // Update submit button text
+      $('#btn-enter').querySelector('span').textContent = '注册并进入';
+    }
+
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const name = input.value.trim();
-      if (name) {
+      const pw = $('#password-input').value;
+      const isRegister = $('#btn-enter').querySelector('span').textContent.includes('注册');
+
+      if (!name) { showToast('请输入用户名'); input.focus(); return; }
+      if (name.length < 2) { showToast('用户名至少2个字符'); return; }
+      if (!pw) { showToast('请输入密码'); $('#password-input').focus(); return; }
+      if (isRegister && pw.length < 6) { showToast('密码至少6位'); return; }
+
+      // Try backend first
+      if (API_BASE) {
+        const endpoint = isRegister ? '/api/user/register' : '/api/user/login';
+        const result = await apiCall(endpoint, 'POST', { username: name, password: pw });
+        if (result && result.success) {
+          state.username = result.data.user.username;
+          state.token = result.data.token;
+          state.isRegistered = true;
+          if (!state.joinDate) state.joinDate = Date.now();
+          saveState();
+          showToast(isRegister ? '注册成功，欢迎！' : '登录成功！');
+          navigate('home');
+          return;
+        } else if (result) {
+          showToast(result.message || '操作失败');
+          return;
+        }
+        // If API unreachable, fall through to local mode
+      }
+
+      // Local mode (no backend)
+      const users = getLocalUsers();
+      if (isRegister) {
+        if (users[name]) { showToast('用户名已存在'); return; }
+        users[name] = { password: simpleHash(pw), avatar: '🍵', joinDate: Date.now() };
+        saveLocalUsers(users);
         state.username = name;
+        state.isRegistered = true;
         if (!state.joinDate) state.joinDate = Date.now();
         saveState();
+        showToast('注册成功，欢迎来到茶海心遇！');
         navigate('home');
       } else {
-        input.focus();
-        showToast('请输入你的名字');
+        if (!users[name]) { showToast('用户名不存在'); return; }
+        if (users[name].password !== simpleHash(pw)) { showToast('密码错误'); return; }
+        state.username = name;
+        state.isRegistered = true;
+        if (!state.joinDate) state.joinDate = users[name].joinDate || Date.now();
+        saveState();
+        showToast('登录成功！');
+        navigate('home');
       }
     });
 
     btnGuest.addEventListener('click', () => {
       state.username = '茶友';
+      state.isRegistered = false;
       if (!state.joinDate) state.joinDate = Date.now();
       saveState();
       navigate('home');
@@ -308,13 +417,30 @@
     btn.classList.add('loading');
     btn.disabled = true;
 
-    const emotion = analyzeEmotion(text);
-    const em = EMOTIONS[emotion];
-    const poems = POEMS[emotion];
-    const poem = poems[Math.floor(Math.random() * poems.length)];
+    let emotion, poem, imageUrl, audioUrl;
 
-    const imagePrompt = `${em.prompt}, tea ceremony, emotional, artistic, high quality`;
-    const imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(imagePrompt)}?width=512&height=512&nologo=true&seed=${Date.now()}`;
+    // Try backend API first
+    if (API_BASE) {
+      const apiResult = await apiCall('/api/generate', 'POST', { text });
+      if (apiResult && apiResult.success) {
+        const d = apiResult.data;
+        emotion = d.emotion;
+        poem = d.poemText || d.poem_text || '';
+        imageUrl = d.imageUrl || d.image_url || '';
+        audioUrl = d.audioUrl || d.audio_url || '';
+      }
+    }
+
+    // Fallback to local generation
+    if (!emotion) {
+      emotion = analyzeEmotion(text);
+      const em = EMOTIONS[emotion];
+      const poems = POEMS[emotion];
+      poem = poems[Math.floor(Math.random() * poems.length)];
+      const imagePrompt = `${em.prompt}, tea ceremony, emotional, artistic, high quality`;
+      imageUrl = `https://image.pollinations.ai/prompt/${encodeURIComponent(imagePrompt)}?width=512&height=512&nologo=true&seed=${Date.now()}`;
+      audioUrl = AUDIO_URLS[emotion] || '';
+    }
 
     const result = {
       id: 'r_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8),
@@ -389,6 +515,16 @@
       if (!state.history.some(h => h.id === currentResult.id)) {
         state.history.unshift(currentResult);
         saveState();
+        // Also save to backend if connected
+        if (API_BASE && state.token) {
+          apiCall('/api/generate/save', 'POST', {
+            text: currentResult.inputText,
+            emotion: currentResult.emotion,
+            image_url: currentResult.imageUrl,
+            audio_url: currentResult.audioUrl,
+            poem_text: currentResult.poemText,
+          });
+        }
         showToast('已收藏到心语历程');
         $('#btn-save-result').textContent = '✓ 已收藏';
         $('#btn-save-result').disabled = true;
