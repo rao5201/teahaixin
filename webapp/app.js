@@ -7,9 +7,8 @@
 
   // ─── Constants ──────────────────────────────────
   const STORAGE_KEY = 'teahaixin_data';
-  // API地址：部署后端后替换为你的Render地址，例如 https://teahaixin-api.onrender.com
-  // 留空则使用纯本地模式
-  const API_BASE = localStorage.getItem('teahaixin_api') || '';
+  // API地址：优先使用localStorage中的自定义地址，否则使用HuggingFace Spaces后端
+  const API_BASE = localStorage.getItem('teahaixin_api') || 'https://rao5201-teahaixin-api.hf.space';
   const EMOTIONS = {
     happy:    { label: '喜悦', emoji: '😊', color: '#FFD700', prompt: 'golden sunlight through cherry blossoms, warm happy scene, watercolor chinese painting' },
     sad:      { label: '忧伤', emoji: '😢', color: '#4A90E2', prompt: 'rain falling on lotus pond, melancholy blue tones, misty chinese ink painting' },
