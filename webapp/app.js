@@ -189,7 +189,7 @@
     if (el) el.classList.add('active');
 
     // Nav visibility
-    const showNav = ['home', 'history', 'profile'].includes(screen);
+    const showNav = ['home', 'history', 'profile', 'chat'].includes(screen);
     $('#bottom-nav').style.display = showNav ? 'flex' : 'none';
 
     // Nav active state
@@ -202,13 +202,14 @@
     if (screen === 'home') initHome();
     if (screen === 'history') renderHistory();
     if (screen === 'profile') renderProfile();
+    if (screen === 'chat') loadContacts();
   }
 
   function handleHash() {
     const hash = location.hash.slice(1) || '';
     if (!hash || hash === 'welcome') {
       navigate(state.username ? 'home' : 'welcome', false);
-    } else if (['home', 'history', 'profile', 'result'].includes(hash)) {
+    } else if (['home', 'history', 'profile', 'result', 'chat', 'chatroom'].includes(hash)) {
       if (!state.username && hash !== 'welcome') {
         navigate('welcome', false);
       } else {
@@ -699,6 +700,229 @@
     });
   }
 
+  // ─── Chat System ──────────────────────────────
+  let currentChat = null; // { id, username, avatar, displayName }
+  let chatPolling = null;
+
+  async function loadContacts() {
+    if (!state.token) {
+      $('#chat-contacts').innerHTML = '<div class="empty-state"><div class="empty-icon">🔒</div><p class="empty-title">请先登录</p><p class="empty-desc">注册或登录后即可与AI茶友聊天</p></div>';
+      return;
+    }
+    const result = await apiCall('/api/chat/contacts');
+    if (!result || !result.success) {
+      $('#chat-contacts').innerHTML = '<div class="empty-state"><div class="empty-icon">🍵</div><p class="empty-title">暂无茶友</p></div>';
+      return;
+    }
+    const contacts = result.data.contacts;
+    if (contacts.length === 0) {
+      $('#chat-contacts-empty').style.display = 'block';
+      $('#chat-contacts').style.display = 'none';
+      return;
+    }
+    $('#chat-contacts-empty').style.display = 'none';
+    $('#chat-contacts').style.display = 'flex';
+    $('#chat-contacts').innerHTML = contacts.map(c => {
+      const unread = c.unread > 0 ? `<span class="contact-unread">${c.unread > 99 ? '99+' : c.unread}</span>` : '';
+      const lastMsg = c.last_message ? escapeHtml(c.last_message).slice(0, 30) : c.bio || '点击开始聊天';
+      const timeStr = c.last_time ? formatChatTime(c.last_time) : '';
+      return `<div class="contact-card" data-id="${c.id}" data-name="${escapeHtml(c.displayName)}" data-avatar="${c.avatar || '🍵'}">
+        <div class="contact-avatar">${c.avatar || '🍵'}</div>
+        <div class="contact-body">
+          <div class="contact-top">
+            <span class="contact-name">${escapeHtml(c.displayName)}</span>
+            <span class="contact-time">${timeStr}</span>
+          </div>
+          <div class="contact-bottom">
+            <span class="contact-last">${lastMsg}</span>
+            ${unread}
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function formatChatTime(str) {
+    const d = new Date(str.replace(' ', 'T'));
+    const now = new Date();
+    const diff = now - d;
+    if (diff < 60000) return '刚刚';
+    if (diff < 3600000) return Math.floor(diff / 60000) + '分钟前';
+    if (diff < 86400000) return `${d.getHours()}:${String(d.getMinutes()).padStart(2, '0')}`;
+    return `${d.getMonth() + 1}/${d.getDate()}`;
+  }
+
+  async function openChat(contactId, name, avatar) {
+    currentChat = { id: contactId, displayName: name, avatar: avatar };
+    $('#chatroom-name').textContent = name;
+    $('#chatroom-avatar').textContent = avatar;
+    $('#chatroom-status').textContent = '在线';
+    $('#chatroom-messages').innerHTML = '<div class="chat-loading">加载中...</div>';
+    navigate('chatroom');
+
+    const result = await apiCall(`/api/chat/messages/${contactId}`);
+    if (result && result.success) {
+      renderMessages(result.data.messages);
+    } else {
+      $('#chatroom-messages').innerHTML = '<div class="chat-welcome"><p>开始与 ' + escapeHtml(name) + ' 聊天吧 🍵</p></div>';
+    }
+
+    // Start polling for new messages
+    stopChatPolling();
+    chatPolling = setInterval(() => pollNewMessages(), 3000);
+  }
+
+  function renderMessages(messages) {
+    const container = $('#chatroom-messages');
+    if (!messages || messages.length === 0) {
+      container.innerHTML = '<div class="chat-welcome"><p>开始聊天吧 🍵</p></div>';
+      return;
+    }
+    container.innerHTML = messages.map(m => {
+      const cls = m.is_mine ? 'msg-mine' : 'msg-other';
+      const time = formatChatTime(m.created_at);
+      return `<div class="chat-msg ${cls}">
+        ${!m.is_mine ? `<span class="msg-avatar">${currentChat.avatar}</span>` : ''}
+        <div class="msg-bubble">
+          <div class="msg-text">${escapeHtml(m.content)}</div>
+          <div class="msg-time">${time}</div>
+        </div>
+      </div>`;
+    }).join('');
+    container.scrollTop = container.scrollHeight;
+  }
+
+  function appendMessage(msg) {
+    const container = $('#chatroom-messages');
+    // Remove welcome message if exists
+    const welcome = container.querySelector('.chat-welcome, .chat-loading');
+    if (welcome) welcome.remove();
+
+    const cls = msg.is_mine ? 'msg-mine' : 'msg-other';
+    const time = formatChatTime(msg.created_at || new Date().toISOString());
+    const div = document.createElement('div');
+    div.className = `chat-msg ${cls}`;
+    div.dataset.id = msg.id || '';
+    div.innerHTML = `
+      ${!msg.is_mine ? `<span class="msg-avatar">${currentChat.avatar}</span>` : ''}
+      <div class="msg-bubble">
+        <div class="msg-text">${escapeHtml(msg.content)}</div>
+        <div class="msg-time">${time}</div>
+      </div>`;
+    container.appendChild(div);
+    container.scrollTop = container.scrollHeight;
+  }
+
+  let lastMsgId = 0;
+  async function pollNewMessages() {
+    if (!currentChat) return;
+    const result = await apiCall(`/api/chat/messages/${currentChat.id}?limit=5`);
+    if (result && result.success && result.data.messages.length > 0) {
+      const msgs = result.data.messages;
+      const newMsgs = msgs.filter(m => m.id > lastMsgId && !m.is_mine);
+      if (newMsgs.length > 0) {
+        newMsgs.forEach(m => {
+          if (!document.querySelector(`.chat-msg[data-id="${m.id}"]`)) {
+            appendMessage(m);
+          }
+        });
+        lastMsgId = Math.max(...msgs.map(m => m.id));
+        $('#chatroom-typing').style.display = 'none';
+      }
+    }
+  }
+
+  function stopChatPolling() {
+    if (chatPolling) { clearInterval(chatPolling); chatPolling = null; }
+  }
+
+  async function sendMessage() {
+    const input = $('#chat-input');
+    const text = input.value.trim();
+    if (!text || !currentChat) return;
+
+    input.value = '';
+    input.style.height = 'auto';
+    $('#btn-chat-send').disabled = true;
+
+    // Show user message immediately
+    appendMessage({ content: text, is_mine: 1, created_at: new Date().toISOString() });
+
+    // Show typing indicator
+    setTimeout(() => {
+      $('#chatroom-typing').style.display = 'flex';
+    }, 500);
+
+    const result = await apiCall('/api/chat/send', 'POST', {
+      to_user_id: currentChat.id,
+      content: text
+    });
+
+    if (result && result.success && result.data.message) {
+      lastMsgId = Math.max(lastMsgId, result.data.message.id || 0);
+    }
+  }
+
+  function setupChat() {
+    // Contact list click
+    $('#chat-contacts').addEventListener('click', e => {
+      const card = e.target.closest('.contact-card');
+      if (!card) return;
+      const id = parseInt(card.dataset.id);
+      const name = card.dataset.name;
+      const avatar = card.dataset.avatar;
+      lastMsgId = 0;
+      openChat(id, name, avatar);
+    });
+
+    // Back button
+    $('#btn-back-chat').addEventListener('click', () => {
+      stopChatPolling();
+      currentChat = null;
+      navigate('chat');
+    });
+
+    // Send button
+    $('#btn-chat-send').addEventListener('click', sendMessage);
+
+    // Chat input
+    const chatInput = $('#chat-input');
+    chatInput.addEventListener('input', () => {
+      $('#btn-chat-send').disabled = chatInput.value.trim().length === 0;
+      // Auto-resize
+      chatInput.style.height = 'auto';
+      chatInput.style.height = Math.min(chatInput.scrollHeight, 100) + 'px';
+    });
+    chatInput.addEventListener('keydown', e => {
+      if (e.key === 'Enter' && !e.shiftKey) {
+        e.preventDefault();
+        sendMessage();
+      }
+    });
+
+    // Search
+    let searchTimer;
+    $('#chat-search').addEventListener('input', e => {
+      clearTimeout(searchTimer);
+      const q = e.target.value.trim();
+      if (!q) { loadContacts(); return; }
+      searchTimer = setTimeout(async () => {
+        const result = await apiCall(`/api/chat/search?q=${encodeURIComponent(q)}`);
+        if (result && result.success) {
+          const users = result.data.users;
+          $('#chat-contacts').innerHTML = users.map(u => `
+            <div class="contact-card" data-id="${u.id}" data-name="${escapeHtml(u.displayName)}" data-avatar="${u.avatar || '🍵'}">
+              <div class="contact-avatar">${u.avatar || '🍵'}</div>
+              <div class="contact-body">
+                <div class="contact-top"><span class="contact-name">${escapeHtml(u.displayName)}</span></div>
+                <div class="contact-bottom"><span class="contact-last">点击开始聊天</span></div>
+              </div>
+            </div>`).join('') || '<div class="empty-state"><p>未找到茶友</p></div>';
+        }
+      }, 300);
+    });
+  }
+
   // ─── Utilities ──────────────────────────────
   function escapeHtml(str) {
     const div = document.createElement('div');
@@ -729,6 +953,7 @@
     setupResult();
     setupHistory();
     setupProfile();
+    setupChat();
     setupNav();
     handleHash();
     window.addEventListener('hashchange', handleHash);

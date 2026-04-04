@@ -174,6 +174,55 @@
 
     <!-- Profile Screen -->
     <section id="screen-profile" class="screen">
+
+    <!-- Chat Contacts Screen -->
+    <section id="screen-chat" class="screen">
+      <div class="screen-content with-nav">
+        <header class="page-header">
+          <h2>茶友圈</h2>
+          <div class="chat-search-bar">
+            <input type="text" id="chat-search" placeholder="搜索茶友..." autocomplete="off">
+          </div>
+        </header>
+        <div id="chat-contacts" class="chat-contacts"></div>
+        <div id="chat-contacts-empty" class="empty-state" style="display:none;">
+          <div class="empty-icon">🍵</div>
+          <p class="empty-title">正在寻找茶友...</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- Chat Room Screen -->
+    <section id="screen-chatroom" class="screen">
+      <div class="chatroom-container">
+        <header class="chatroom-header">
+          <button class="back-btn" id="btn-back-chat">
+            <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M20 11H7.83l5.59-5.59L12 4l-8 8 8 8 1.41-1.41L7.83 13H20v-2z"/></svg>
+          </button>
+          <div class="chatroom-info">
+            <span class="chatroom-avatar" id="chatroom-avatar">🍵</span>
+            <div>
+              <div class="chatroom-name" id="chatroom-name">茶友</div>
+              <div class="chatroom-status" id="chatroom-status">在线</div>
+            </div>
+          </div>
+        </header>
+        <div class="chatroom-messages" id="chatroom-messages"></div>
+        <div class="chatroom-typing" id="chatroom-typing" style="display:none;">
+          <span class="typing-dots"><i></i><i></i><i></i></span>
+          <span>正在输入...</span>
+        </div>
+        <div class="chatroom-input">
+          <textarea id="chat-input" placeholder="说点什么..." rows="1" maxlength="500"></textarea>
+          <button class="chat-send-btn" id="btn-chat-send" disabled>
+            <svg viewBox="0 0 24 24" width="22" height="22"><path fill="currentColor" d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+          </button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Profile Screen (original) -->
+    <section id="screen-profile" class="screen">
       <div class="screen-content with-nav">
         <header class="page-header">
           <h2>我的茶室</h2>
@@ -236,6 +285,11 @@
       <button class="nav-item" data-screen="history">
         <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M13 3c-4.97 0-9 4.03-9 9H1l3.89 3.89.07.14L9 12H6c0-3.87 3.13-7 7-7s7 3.13 7 7-3.13 7-7 7c-1.93 0-3.68-.79-4.94-2.06l-1.42 1.42C8.27 19.99 10.51 21 13 21c4.97 0 9-4.03 9-9s-4.03-9-9-9zm-1 5v5l4.28 2.54.72-1.21-3.5-2.08V8H12z"/></svg>
         <span>历程</span>
+      </button>
+      <button class="nav-item" data-screen="chat">
+        <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M20 2H4c-1.1 0-2 .9-2 2v18l4-4h14c1.1 0 2-.9 2-2V4c0-1.1-.9-2-2-2zm0 14H6l-2 2V4h16v12z"/></svg>
+        <span>茶友</span>
+        <span class="nav-badge" id="chat-badge" style="display:none;"></span>
       </button>
       <button class="nav-item" data-screen="profile">
         <svg viewBox="0 0 24 24" width="24" height="24"><path fill="currentColor" d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/></svg>

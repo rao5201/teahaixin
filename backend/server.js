@@ -11,6 +11,7 @@ const userRoutes = require('./routes/user');
 const mapRoutes = require('./routes/map');
 const resonanceRoutes = require('./routes/resonance');
 const reportRoutes = require('./routes/report');
+const chatRoutes = require('./routes/chat');
 
 const app = express();
 const server = http.createServer(app);
@@ -36,6 +37,7 @@ app.use('/api/user', userRoutes);
 app.use('/api/map', mapRoutes);
 app.use('/api/resonance', resonanceRoutes);
 app.use('/api/report', reportRoutes);
+app.use('/api/chat', chatRoutes);
 
 // 健康检查
 app.get('/api/health', (_req, res) => {

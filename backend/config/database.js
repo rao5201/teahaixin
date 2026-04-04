@@ -59,7 +59,31 @@ function initDatabase() {
     CREATE INDEX IF NOT EXISTS idx_emotions_location ON emotions(latitude, longitude);
     CREATE INDEX IF NOT EXISTS idx_resonances_to_user ON resonances(to_user_id);
     CREATE INDEX IF NOT EXISTS idx_resonances_from_user ON resonances(from_user_id);
+
+    CREATE TABLE IF NOT EXISTS messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      from_user_id INTEGER NOT NULL,
+      to_user_id INTEGER NOT NULL,
+      content TEXT NOT NULL,
+      msg_type TEXT DEFAULT 'text',
+      is_read INTEGER DEFAULT 0,
+      created_at DATETIME DEFAULT (datetime('now', 'localtime')),
+      FOREIGN KEY (from_user_id) REFERENCES users(id) ON DELETE CASCADE,
+      FOREIGN KEY (to_user_id) REFERENCES users(id) ON DELETE CASCADE
+    );
+
+    CREATE INDEX IF NOT EXISTS idx_messages_from ON messages(from_user_id);
+    CREATE INDEX IF NOT EXISTS idx_messages_to ON messages(to_user_id);
+    CREATE INDEX IF NOT EXISTS idx_messages_created ON messages(created_at);
   `);
+
+  // Seed AI accounts if not exists
+  const aiCount = conn.prepare('SELECT COUNT(*) as c FROM users WHERE username LIKE ?').get('AI_%');
+  if (aiCount.c === 0) {
+    console.log('[数据库] 开始创建AI茶友账号...');
+    const { seedAIAccounts } = require('../services/aiAccounts');
+    seedAIAccounts(conn);
+  }
 
   console.log('[数据库] 初始化完成');
 }
