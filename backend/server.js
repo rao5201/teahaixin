@@ -12,6 +12,7 @@ const mapRoutes = require('./routes/map');
 const resonanceRoutes = require('./routes/resonance');
 const reportRoutes = require('./routes/report');
 const chatRoutes = require('./routes/chat');
+const adminRoutes = require('./routes/admin');
 
 const app = express();
 const server = http.createServer(app);
@@ -38,6 +39,7 @@ app.use('/api/map', mapRoutes);
 app.use('/api/resonance', resonanceRoutes);
 app.use('/api/report', reportRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/admin', adminRoutes);
 
 // 健康检查
 app.get('/api/health', (_req, res) => {
